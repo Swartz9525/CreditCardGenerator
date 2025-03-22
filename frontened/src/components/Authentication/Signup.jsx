@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import axios from "axios";
 import {
   Form,
   Button,
@@ -17,39 +18,57 @@ const Signup = () => {
     confirmPassword: "",
     mobile: "",
     dob: "",
-    pic: null,
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleFileChange = (e) => {
-    setFormData({ ...formData, pic: e.target.files[0] });
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    console.log("Form Submitted", formData);
-    alert("Signup successful!");
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/auth/signup", // ✅ Use environment variable
+        formData
+      );
+
+      console.log("Signup Successful:", response.data);
+      setSuccess("Signup successful! Please log in.");
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        mobile: "",
+        dob: "",
+      });
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Signup failed. Please try again."
+      );
+      console.error("Signup Error:", err);
+    }
   };
 
   return (
     <Container className="mt-5 d-flex justify-content-center">
       <Row className="justify-content-md-center w-100">
-        <Col xs={12} md={4}>
-          <Card className="shadow-lg p-3" style={{ borderRadius: "10px" }}>
+        <Col xs={12} md={5}>
+          <Card className="shadow-lg p-4" style={{ borderRadius: "10px" }}>
             <h3 className="text-center mb-3">Signup</h3>
             {error && <Alert variant="danger">{error}</Alert>}
+            {success && <Alert variant="success">{success}</Alert>}
             <Form onSubmit={handleSubmit}>
               <Form.Group controlId="name" className="mb-2">
                 <Form.Label>Name</Form.Label>
@@ -113,16 +132,6 @@ const Signup = () => {
                   name="dob"
                   value={formData.dob}
                   onChange={handleChange}
-                  required
-                />
-              </Form.Group>
-
-              <Form.Group controlId="pic" className="mb-2">
-                <Form.Label>Profile Picture</Form.Label>
-                <Form.Control
-                  type="file"
-                  name="pic"
-                  onChange={handleFileChange}
                   required
                 />
               </Form.Group>
