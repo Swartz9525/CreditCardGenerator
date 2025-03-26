@@ -1,23 +1,37 @@
 import React, { useContext } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Signup from "./components/Authentication/Signup";
-import Login from "./components/Authentication/Login";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from "react-router-dom";
 import { AuthContext, AuthProvider } from "./context/AuthContext";
 import Home from "./pages/Home";
+import Signup from "./components/Authentication/Signup";
+import Login from "./components/Authentication/Login";
 
-const PrivateRoute = ({ element }) => {
+const PrivateRoute = () => {
   const { token } = useContext(AuthContext);
-  return token ? element : <Navigate to="/" />;
+  return token ? <Outlet /> : <Navigate to="/" replace />;
 };
 
 const App = () => {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/home" element={<PrivateRoute element={<Home />} />} />
-      </Routes>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Private Routes */}
+          <Route element={<PrivateRoute />}>
+            <Route path="/home" element={<Home />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Router>
     </AuthProvider>
   );
 };
