@@ -87,10 +87,30 @@ const Home = () => {
   const [generatedCardType, setGeneratedCardType] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [cardCount, setCardCount] = useState(0);
+
+  const checkCardLimit = async () => {
+    try {
+      const countResponse = await axios.get(
+        `http://localhost:5000/api/cards/count?email=${user.email}`
+      );
+      setCardCount(countResponse.data.count);
+      return countResponse.data.count;
+    } catch (error) {
+      console.error("Error checking card limit:", error);
+      return 0;
+    }
+  };
 
   const handleGenerate = async () => {
     if (!user || !user.email) {
       alert("User details are missing. Please log in.");
+      return;
+    }
+
+    const currentCardCount = await checkCardLimit();
+    if (currentCardCount >= 5) {
+      setMessage("You have reached the maximum number of credit cards (5).");
       return;
     }
 
@@ -105,7 +125,6 @@ const Home = () => {
 
     setGeneratedCard(newCard);
     setGeneratedCardType(selectedType);
-
     await sendCardToBackend(newCard);
   };
 
@@ -123,7 +142,9 @@ const Home = () => {
           ? "Card saved successfully!"
           : response.data.message || "Error saving card."
       );
+      await checkCardLimit(); // Refresh card count after saving
     } catch (error) {
+      console.error("Error saving card:", error);
       setMessage("Error saving card. Please try again.");
     } finally {
       setLoading(false);
@@ -135,18 +156,11 @@ const Home = () => {
 
   return (
     <Container className="mt-5 text-center">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-      >
-        <h1 className="mb-4 text-primary">Credit Card Generator</h1>
-        <p className="text-muted">
-          Generate a secure credit card instantly for testing or educational
-          purposes.
-        </p>
-      </motion.div>
-
+      <h1 className="mb-4 text-primary">Credit Card Generator</h1>
+      <p className="text-muted">
+        Generate a secure credit card instantly for testing or educational
+        purposes.
+      </p>
       <Row className="justify-content-center mt-4">
         <Col md={6}>
           <Form>
@@ -165,16 +179,14 @@ const Home = () => {
               </Form.Control>
             </Form.Group>
           </Form>
-
           <Button
             variant="primary"
             className="mt-3 w-100"
             onClick={handleGenerate}
-            disabled={loading}
+            disabled={loading || cardCount >= 5}
           >
             {loading ? "Saving..." : "Generate Card"}
           </Button>
-
           {message && (
             <Alert
               className="mt-3"
@@ -183,23 +195,16 @@ const Home = () => {
               {message}
             </Alert>
           )}
-
           {generatedCard && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <CardComponent
-                generatedCard={generatedCard}
-                bgColor={bgColor}
-                textColor={textColor}
-                icon={React.cloneElement(
-                  cardIcons[generatedCardType] || defaultIcon,
-                  { color: iconColor }
-                )}
-              />
-            </motion.div>
+            <CardComponent
+              generatedCard={generatedCard}
+              bgColor={bgColor}
+              textColor={textColor}
+              icon={React.cloneElement(
+                cardIcons[generatedCardType] || defaultIcon,
+                { color: iconColor }
+              )}
+            />
           )}
         </Col>
       </Row>
